@@ -12,4 +12,4 @@ Dimension of tables: Min = 3, Max = 9
 
 Passphrase to be encrypted
 
-Visit snerx.com/sniph
+Visit https://www.snerx.com/sniph in depth documentation
