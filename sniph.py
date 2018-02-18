@@ -176,9 +176,9 @@ if len(sys.argv) == 1:
             if x == R:
                 x = 0
                 w += 1
-            # 'Randomly' alter path values
-            # Important: does not affect location, only makes it difficult to 
-            # determine table size in attempt to crack
+            # 'Randomly' alter character mapping values
+            # Important: does not affect actual location, obscures
+            # table size in analysis
             x += (r % w) * R
             
         else: # column
