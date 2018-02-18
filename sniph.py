@@ -193,7 +193,7 @@ if len(sys.argv) == 1:
             
         c_enc += str(x)
         
-    print "Full Cypher:"
+    print "\nFull Cypher:"
     cOTP = OTP
     c_outs = []
     # Formatting for testing
@@ -214,6 +214,10 @@ if len(sys.argv) == 1:
     print path_final
     print cOTP
     print c_outs
+    print c_enc
+    
+    print "\nFinal w/ offset:"
+    c_enc = c_enc[offset:] + c_enc[0:offset]
     print c_enc
     
 else:
