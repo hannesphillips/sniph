@@ -7,111 +7,14 @@ import sys, random
 def findOccurences(S, c):
     return [i for i, letter in enumerate(S) if letter == c]
     
-if len(sys.argv) == 1:
-    print('Welcome to Sniph Version 1.0.3:\n')
+def cipher(phrase, msg, N, R, C, offset):
     
-    N = 4 # N = cipher depth
-    inp = input('Input # of dimensions, N, for cipher (empty for default): ')
-    if len(inp) == 0:
-        N = 4
-    else:
-        N = int(inp)
-    if N < 4:
-        N = 4
-        
-    R = 0 # table rows
-    C = 0 # table columns
-    dim = input('Enter dimensions for cipher table, in range 3-10, in form # rows x #cols (empty for default): ')
-    if len(dim) == 0:
-        # default
-        R = 3
-        C = 3
-    else:    
-    # Parse input
-        p1 = 0 # location of a space if there is one
-        p2 = 0 # location of 'x'
-        if ' ' in dim: p1 = dim.index(' ')
-        else: p1 = len(dim)
-        if 'x' in dim: p2 = dim.index('x')
-        else:
-            # if there is no 'x' can not seperate rows from columns -> quit
-            print('Invalid input format')
-            quit()
-        
-        if p2 < p1: p1 = p2 # 'x' appears before ' '
-        R = dim[0:p1] # Get 1st set of numbers
-        if len(R) == 0: R = 3 # if empty, default
-        else: R = int(R)
-        if R < 3: 
-            print('Value must be greater than or equal to 3. Defaulting to 3')
-            R = 3
-        elif R > 10: 
-            print('Value must be less than or equal to 10. Defaulting to 10')
-            R = 10
-        
-       
-        dim = dim[p2:] # Cut out input we used above
-        p1 = 0 # Location of ' ' if there is one
-        p2 = 0 # Locaton of 'x'
-        if 'x' in dim: p2 = dim.index('x')
-        else:
-            print('Invalid input format')
-            quit()
-        if ' ' in dim: p1 = dim.index(' ')
-        
-        if p1 > p2: p2 = p1 # If there is ' ' after 'x'
-        C = dim[p2 + 1:] # Get set of numbers
-        if len(C) == 0: C = 3
-        else: C = int(C)
-        if C < 3: 
-            print('Value must be greater than or equal to 3. Defaulting to 3')
-            C = 3
-        if C > 10: 
-            print('Value must be less than or equal to 10. Defaulting to 10')
-            C = 10
-    
-    # Verify input was parsed correctly
-    print('Depth = {} \nTable size = {} x {}'.format(N, R, C))
-    
-    size = R * C # table size, area of the table
-    
-    
-    char_set = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ.,?!:;\'\"/\\|<>+-=(){}[]`'
-    '~@#$%^&*1234567890 \n')
-    # repeat char set to fill (R*C)^2 spaces
-    # i.e 3x3 = 9 tables slots with 9 tables holding characters in last level
-    # = 9^2 = 81 characters
-    while len(char_set) < pow(size, 2):
-        char_set += char_set
-    char_set = char_set[0:pow(size,2)]
-    
-    
-    # phrase = passphrase
-    phrase = input('Enter phrase to be encrypted: ')
-    if len(phrase) == 0:
-        print('Error: passphrase required')
-        quit()
-    phrase = phrase.upper()
-    
-    # offset shifts output
-    off_in = input('Enter offset variable to shift text (empty = 0): ')
-    offset = 0
-    if len(off_in) != 0: offset = int(off_in)
-    
-    # path_full will hold the complete path of each character in the passphrase
-    # Encoding with contain the last 4 digits representing each character
-    # OTP and outs are lists holding the digits of the path from root to N-2 and 
-    # from N-1 to N respectively
-    # These lists are just to visualize results in testing
     encoding = ''
-    path_full = ''
-    OTP = []
-    outs = []
     key = 0 # current index in passhprase
     shift = 0 # holds shift value for each character's path
-    for i in range(0, len(phrase)):
+    
+    for i in range(0, len(msg)):
         shift = 0 # comment out for continuous shift value
-        temp = '' # holds path to (N-2)th table
         for j in range(0, N-2):
             pos = char_set.index(phrase[key % len(phrase)]) % size 
             # character's position in set 
@@ -125,23 +28,15 @@ if len(sys.argv) == 1:
             if row_loc == 10: row_loc = 0
             if col_loc == 10: col_loc = 0
             
-            temp += (str(row_loc) + str(col_loc))
             shift += (row_loc - col_loc) # x-y or row - col
             key += 1 # Index for next character in passphrase
-            
-        OTP.append(temp) # Store path to (N-2)th table
-        path_full += temp # Add path thus far to full path
         
         # Shift character set by previously calculated value
         shifted_set = char_set[shift:len(char_set)] + char_set[0:shift]
-            
-        # print(char_set)
-        # print(shift)
-        # print(shifted_set)
         
         # index holds all locations of character to be encoded within the
         # shifted character set
-        index = findOccurences(shifted_set, phrase[i])
+        index = findOccurences(shifted_set, msg[i])
         
         # 'Randomly' select one of those locations
         rand_loc = random.randint(0, sys.maxsize) % len(index)
@@ -167,20 +62,9 @@ if len(sys.argv) == 1:
         # s now holds 4 integers representing a character's location in the last
         # 2 tables taking into account the shift
         
-        encoding += s # encoding is the concatenation of the 4 values for each character
-        path_full += s # add s to the full path as well
-        outs.append(s) # output is a list of the 4 values for each character
-    
-    # See outputs constrained to table size
-    print('Unaltered:')
-    print('path: ', path_full)
-    print('otp: ', OTP)
-    print('outputs: ', outs)
-    print('encoded msg :', encoding)
-    
-    
-    
-    encoding_final = ''
+        encoding += s # cipher text is the concatenation of the 4 values for each character
+        
+    cipher_text = ''
     # 'Random' path wrapping
     # Decides to alter each value in path by row/col size or leave it alone
     for i in range(len(encoding)):
@@ -189,7 +73,7 @@ if len(sys.argv) == 1:
         w = 1 # Number of possible wraps in row or column
         t = x # temp val to determine w
         
-        if i%2 == 0: # row
+        if i % 2 == 0: # row
             t += R
             while t < 10: # This loop gets wrap number
                 w += 1
@@ -212,31 +96,195 @@ if len(sys.argv) == 1:
                 w += 1
             x += (r % w) * C
             
-        encoding_final += str(x) # Add new value to final output
+        cipher_text += str(x) # Add new value to final output
         
-    # Formatting for testing
-    outs_final = []
-    path_final = ''
-    # Construct complete path and new list of sets of 4 for each character
-    for i in range(len(phrase)*2):
-        if i%2 == 0:
-            path_final += OTP[i//2]
-        else:
-            t = encoding_final[2*(i-1) : 2*(i-1) + 4]
-            outs_final.append(t)
-            path_final += t
     
-    # Output to visualize results (will not be present in final)
-    print('\nFull Cipher:')
-    print('path :', path_final)
-    print('otp: ', OTP)
-    print('outputs: ', outs_final)
-    print('encoded msg :', encoding_final)
+    # Return final text with a shift determined by input
+    cipher_text = cipher_text[offset:] + cipher_text[0:offset]
+    return cipher_text
+
+
+
+def decipher(phrase, msg, N, R, C):
     
-    # This will be the only output
-    print('\nActual output:')
-    encoding_final = encoding_final[offset:] + encoding_final[0:offset]
-    print(encoding_final)
+    # Revert values to fit table dimensions and place in code string
+    code = ''
+    for i in range(len(msg)):
+        t = 0
+        if i % 2 == 0: 
+            t = int(msg[i]) % R
+            if t == 0:
+                t = R
+        else: 
+            t = int(msg[i]) % C
+            if t == 0:
+                t = C
+        code += str(t)
+    
+    # Split values of code into groups of four representing each character
+    characters = []
+    for i in range(len(code) // 4):
+        characters.append(code[4*i:4*(i+1)])
+        
+    
+    decoding = ''
+    key = 0 # current index in passphrase
+    for i in range(len(characters)):
+        shift = 0
+        for j in range(0, N-2): # Get path to (N-2)th table to calculate shift
+            # Same as in cipher above
+            pos = char_set.index(phrase[key % len(phrase)]) % size 
+            
+            # Get coord
+            row_loc = pos // C + 1
+            col_loc = pos % C + 1
+            if row_loc == 10: row_loc = 0
+            if col_loc == 10: col_loc = 0
+            
+            shift += (row_loc - col_loc) # x-y or row - col
+            key += 1 # Index for next character in passphrase
+        
+        # Shift character set by previously calculated value
+        shifted_set = char_set[shift:len(char_set)] + char_set[0:shift]
+        
+        # Reverse coordinates of encoded message
+        # Solving for rand_loc in cipher function
+        #       X // C + 1 = row  (here row = characters[i][0])
+        #       X % C + 1 = col   (here col = characters[i][1])
+        X = C * (int(characters[i][0]) - 1)
+        rem = int(characters[i][1]) - 1
+        d2 = 0
+        for z in range(C):
+            if (X + z) % C == rem:
+                d2 = X + z
+        
+        # Same as above, use index 2 for 0 and 3 for 1
+        X = C * (int(characters[i][2]) - 1)
+        rem = int(characters[i][3]) - 1
+        dN = 0
+        for z in range(C):
+            if (X + z) % C == rem:
+                dN = X + z
+        
+        # Final coordinate reversal
+        # Use d2 above as row and dN as col
+        # Solving   d2 = rand_loc // size
+        #           dN = rand_loc % size
+        X = size * d2
+        char_pos = 0
+        for z in range(size):
+            if(X + z) % size == dN:
+                char_pos = X + z
+                
+        # These equations take the path in the last 2 tables and give us
+        # the position of the character we're looking for in the shifter set
+        # Add this character to our decoded message
+        decoding += shifted_set[char_pos]
+        
+        
+    return decoding # Return decoded message
+    
+if len(sys.argv) == 1:
+    print('Welcome to Sniph Version 1.0.3:\n')
+    
+    N = 4 # cipher depth
+    inp = input('Input # of dimensions, N, for cipher (empty for default): ')
+    if len(inp) == 0:
+        N = 4
+    else:
+        N = int(inp)
+    if N < 4:
+        N = 4
+        
+    R = 0 # table rows
+    C = 0 # table columns
+    print('\nEnter dimensions of cipher table')
+    R = input('# of rows (empty for default): ')
+    if len(R) == 0: R = 3
+    else: R = int(R)
+    if R < 3: 
+        print('Value must be greater than or equal to 3. Defaulting to 3\n')
+        R = 3
+    elif R > 10: 
+        print('Value must be less than or equal to 10. Defaulting to 10\n')
+        R = 10
+        
+    C = input('# of columns (empty for default): ')
+    if len(C) == 0: C = 3
+    else: C = int(C)
+    if C < 3: 
+        print('Value must be greater than or equal to 3. Defaulting to 3\n')
+        C = 3
+    elif C > 10: 
+        print('Value must be less than or equal to 10. Defaulting to 10\n')
+        C = 10
+    
+    
+    # # Verify input was parsed correctly
+    # print('Depth = {} \nTable size = {} x {}'.format(N, R, C))
+    
+    
+    size = R * C # table size, area of the table
+    
+    char_set = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ.,?!:;\'\"/\\|<>+-=(){}[]`'
+    '~@#$%^&*1234567890 \n')
+    # repeat char set to fill (R*C)^2 spaces
+    # i.e 3x3 = 9 tables slots with 9 tables holding characters in last level
+    # = 9^2 = 81 characters
+    while len(char_set) < pow(size, 2):
+        char_set += char_set
+    char_set = char_set[0:pow(size,2)]
+    
+    
+    # phrase = passphrase
+    phrase = ''
+    phrase = input('\nEnter pass phrase: ')
+    while len(phrase) == 0: # Check phrase
+        print('Hey dummy, you need a pass phrase!\n')
+        phrase = input('Enter pass phrase: ')
+        
+    phrase = phrase.upper()
+    
+    # offset shifts output
+    off_in = input('\nEnter offset variable to shift text (empty = 0): ')
+    offset = 0
+    if len(off_in) != 0: offset = int(off_in)
+    
+    
+    flag = input('\nCipher (C) or decipher (D)?: ')
+    if not(flag == 'd' or flag == 'D' or flag == 'c' or flag == 'C'):
+        flag = ''
+    while len(flag) == 0: # Check option
+        print('I need to know if I\'m ciphering or deciphering.')
+        flag = input('\nCipher (c) or decipher (d)?: ')
+        if not(flag == 'd' or flag == 'c'):
+            flag = ''
+    
+    # Message is either plain-text or ciphertext
+    msg = ''
+    if flag == 'd':
+        msg = input('\nEnter cipher text:\n')
+        while len(msg) == 0:
+            print('Text cannot be empty')
+            msg = input('Enter cipher text:\n')
+    else:
+        msg = input('\nEnter text to be ciphered:\n')
+        while len(msg) == 0:
+            print('Text cannot be empty')
+            msg = input('Enter text to be ciphered:\n')
+    msg = msg.upper();
+
+
+    
+    if flag == 'c':
+        encoding = cipher(phrase, msg, N, R, C, offset)
+        print('\nResult: ', encoding)
+        
+    elif flag == 'd':
+        msg = msg[-1*offset:] + msg[0:-1*offset] # Reverse offset before decoding
+        decoded = decipher(phrase, msg, N, R, C)
+        print('\nResult: ', decoded)
+    
     
 else:
     if '-h' in sys.argv:
