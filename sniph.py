@@ -7,7 +7,7 @@ import sys, random
 def findOccurences(S, c):
     return [i for i, letter in enumerate(S) if letter == c]
     
-def cipher(phrase, msg, N, R, C, offset):
+def cipher(char_set, phrase, msg, N, R, C, offset):
     
     encoding = ''
     key = 0 # current index in passhprase
@@ -105,7 +105,7 @@ def cipher(phrase, msg, N, R, C, offset):
 
 
 
-def decipher(phrase, msg, N, R, C):
+def decipher(char_set, phrase, msg, N, R, C):
     
     # Revert values to fit table dimensions and place in code string
     code = ''
@@ -119,6 +119,8 @@ def decipher(phrase, msg, N, R, C):
             t = int(msg[i]) % C
             if t == 0:
                 t = C
+        if t == 10:
+            t = 0
         code += str(t)
     
     # Split values of code into groups of four representing each character
@@ -134,6 +136,8 @@ def decipher(phrase, msg, N, R, C):
         for j in range(0, N-2): # Get path to (N-2)th table to calculate shift
             # Same as in cipher above
             pos = char_set.index(phrase[key % len(phrase)]) % size 
+            c = phrase[key % len(phrase)]
+            
             
             # Get coord
             row_loc = pos // C + 1
@@ -148,38 +152,24 @@ def decipher(phrase, msg, N, R, C):
         shifted_set = char_set[shift:len(char_set)] + char_set[0:shift]
         
         # Reverse coordinates of encoded message
-        # Solving for rand_loc in cipher function
-        #       X // C + 1 = row  (here row = characters[i][0])
-        #       X % C + 1 = col   (here col = characters[i][1])
-        X = C * (int(characters[i][0]) - 1)
-        rem = int(characters[i][1]) - 1
-        d2 = 0
-        for z in range(C):
-            if (X + z) % C == rem:
-                d2 = X + z
         
-        # Same as above, use index 2 for 0 and 3 for 1
-        X = C * (int(characters[i][2]) - 1)
-        rem = int(characters[i][3]) - 1
-        dN = 0
-        for z in range(C):
-            if (X + z) % C == rem:
-                dN = X + z
+        # each character is encoded in string row1col1row2col2
+        row1 = int(characters[i][0])
+        if row1 == 0: row1 = 10 # Check for tens
+        col1 = int(characters[i][1])
+        if col1 == 0: col1 = 10
+        row2 = int(characters[i][2])
+        if row2 == 0: row2 = 10
+        col2 = int(characters[i][3])
+        if col2 == 0: col2 = 10
         
-        # Final coordinate reversal
-        # Use d2 above as row and dN as col
-        # Solving   d2 = rand_loc // size
-        #           dN = rand_loc % size
-        X = size * d2
-        char_pos = 0
-        for z in range(size):
-            if(X + z) % size == dN:
-                char_pos = X + z
-                
-        # These equations take the path in the last 2 tables and give us
-        # the position of the character we're looking for in the shifter set
+        # This equation pinpoints the position of the character with
+        # the path of the last 2 tables
+        char_pos = size * (C * (row1 - 1) + col1 - 1) + (C * (row2 - 1) + col2)
+    
         # Add this character to our decoded message
-        decoding += shifted_set[char_pos]
+        # -1 to go from pos to index
+        decoding += shifted_set[char_pos - 1] 
         
         
     return decoding # Return decoded message
@@ -259,6 +249,7 @@ if len(sys.argv) == 1:
         flag = input('\nCipher (c) or decipher (d)?: ')
         if not(flag == 'd' or flag == 'c'):
             flag = ''
+    flag = flag.lower()
     
     # Message is either plain-text or ciphertext
     msg = ''
@@ -273,16 +264,15 @@ if len(sys.argv) == 1:
             print('Text cannot be empty')
             msg = input('Enter text to be ciphered:\n')
     msg = msg.upper();
-
-
+    
     
     if flag == 'c':
-        encoding = cipher(phrase, msg, N, R, C, offset)
+        encoding = cipher(char_set, phrase, msg, N, R, C, offset)
         print('\nResult: ', encoding)
         
     elif flag == 'd':
         msg = msg[-1*offset:] + msg[0:-1*offset] # Reverse offset before decoding
-        decoded = decipher(phrase, msg, N, R, C)
+        decoded = decipher(char_set, phrase, msg, N, R, C)
         print('\nResult: ', decoded)
     
     
